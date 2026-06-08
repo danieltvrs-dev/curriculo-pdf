@@ -1,0 +1,21 @@
+# Dependencias
+node_modules/
+
+# Build de producao
+dist/
+dist-ssr/
+
+# Variaveis de ambiente
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Cache do Vite
+.vite/
