@@ -1,0 +1,20 @@
+# Editores e IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# Logs gerais
+*.log
+logs/
+
+# Arquivos temporários
+*.tmp
+*.bak
