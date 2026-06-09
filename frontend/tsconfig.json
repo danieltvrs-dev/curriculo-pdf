@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    // Versao do JS que o TS vai gerar. ES2020 e suportado por todos browsers modernos
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+
+    // Modulos ES nativos (import/export). Vite trabalha com isso
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    // Como tratar JSX. "react-jsx" e o padrao moderno: nao precisa importar React em todo arquivo
+    "jsx": "react-jsx",
+
+    // Modo didatico: nao exige tudo tipado. Quando voce evoluir, ligamos
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+
+    // Ajuda na interop com pacotes antigos
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
+    // Ignora checagem de tipos nas dependencias (acelera muito)
+    "skipLibCheck": true,
+
+    // O Vite ja compila TS, nao precisamos do tsc gerando JS
+    "noEmit": true,
+
+    // Cada arquivo precisa ser compilavel isoladamente. Exigido pelo Vite
+    "isolatedModules": true,
+
+    // Permite importar arquivos .json como modulos
+    "resolveJsonModule": true
+  },
+  "include": ["src"]
+}
