@@ -37,13 +37,20 @@ class DadosPessoais(BaseModel):
 
 
 class Experiencia(BaseModel):
-    """Uma posicao profissional. data_fim None significa trabalho atual."""
+    """
+    Uma posicao profissional. data_fim None significa trabalho atual.
+
+    O campo tecnologias e tratado como lista de palavras-chave: facilita
+    o parsing por ATS, que costuma extrair termos tecnicos por proximidade
+    com cabecalhos como "Tecnologias:" ou em listas separadas por virgula.
+    """
 
     empresa: str = Field(..., min_length=2, max_length=120)
     cargo: str = Field(..., min_length=2, max_length=120)
     data_inicio: date
     data_fim: Optional[date] = None
     descricao: str = Field(..., min_length=10, max_length=500)
+    tecnologias: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def valida_periodo(self) -> "Experiencia":
