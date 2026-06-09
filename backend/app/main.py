@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.routers import curriculo
+
 load_dotenv()
 
 app = FastAPI(
@@ -20,6 +22,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+app.include_router(
+    curriculo.router,
+    prefix="/curriculos",
+    tags=["curriculos"],
 )
 
 
