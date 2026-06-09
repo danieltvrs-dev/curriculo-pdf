@@ -6,6 +6,7 @@ Aplicação web para montar um currículo a partir de um formulário e baixar o 
 
 **Frontend**
 - React 18 com Vite
+- TypeScript (configuração didática, strict desligado)
 - TailwindCSS para a estilização
 - Axios para conversar com a API
 
