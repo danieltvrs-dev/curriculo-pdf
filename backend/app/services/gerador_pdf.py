@@ -9,8 +9,11 @@ Estrategia:
   delimitadores de bloco.
 - Listas de tecnologias e habilidades como texto separado por virgula
   em paragrafo simples, NUNCA como tabela ou tags visuais (parser baga).
+- Todo texto vindo do usuario passa por escape de HTML antes de virar
+  Paragraph. Quebras de linha sao preservadas em campos de texto livre.
 """
 
+import html
 from datetime import date
 from io import BytesIO
 from typing import Optional
@@ -33,6 +36,29 @@ from app.schemas import (
     Formacao,
     Projeto,
 )
+
+
+# ---------------------------------------------------------------------------
+# Helpers de seguranca de texto
+# ---------------------------------------------------------------------------
+# Tudo que vem do usuario precisa passar por aqui ANTES de virar Paragraph.
+# Sem escape, caracteres como '<' quebram o parser do ReportLab.
+
+
+def _escapa(texto: str) -> str:
+    """Escapa caracteres especiais de HTML (& < >) pra Paragraph seguro."""
+    return html.escape(texto, quote=False)
+
+
+def _escapa_multiline(texto: str) -> str:
+    """
+    Escapa HTML e converte quebras de linha do usuario em <br/>.
+
+    Usado em campos de texto livre (resumo profissional, descricao
+    de experiencia, descricao de projeto), onde preservar paragrafos
+    do usuario importa pra legibilidade.
+    """
+    return _escapa(texto).replace("\n", "<br/>")
 
 
 # ---------------------------------------------------------------------------
@@ -104,7 +130,7 @@ _estilo_tecnologias = ParagraphStyle(
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Helpers de formatacao
 # ---------------------------------------------------------------------------
 
 
@@ -121,26 +147,38 @@ def _formata_periodo(inicio: date, fim: Optional[date]) -> str:
 
 def _linha_contato(dados: DadosPessoais) -> str:
     """Monta a linha de contato no cabecalho, separada por bullets."""
-    partes: list[str] = [dados.email, dados.telefone, dados.cidade]
+    partes: list[str] = [
+        _escapa(dados.email),
+        _escapa(dados.telefone),
+        _escapa(dados.cidade),
+    ]
     if dados.linkedin_url:
-        partes.append(str(dados.linkedin_url))
+        partes.append(_escapa(str(dados.linkedin_url)))
     if dados.github_url:
-        partes.append(str(dados.github_url))
+        partes.append(_escapa(str(dados.github_url)))
     if dados.portfolio_url:
-        partes.append(str(dados.portfolio_url))
+        partes.append(_escapa(str(dados.portfolio_url)))
     return " · ".join(partes)
+
+
+def _lista_tecnologias(tecs: list[str]) -> str:
+    """Junta tecnologias separadas por virgula, ja escapadas."""
+    return ", ".join(_escapa(t) for t in tecs)
 
 
 def _bloco_experiencia(exp: Experiencia) -> list:
     blocos = [
-        Paragraph(f"{exp.cargo} — {exp.empresa}", _estilo_subtitulo),
+        Paragraph(
+            f"{_escapa(exp.cargo)} — {_escapa(exp.empresa)}",
+            _estilo_subtitulo,
+        ),
         Paragraph(_formata_periodo(exp.data_inicio, exp.data_fim), _estilo_periodo),
-        Paragraph(exp.descricao, _estilo_corpo),
+        Paragraph(_escapa_multiline(exp.descricao), _estilo_corpo),
     ]
     if exp.tecnologias:
         blocos.append(
             Paragraph(
-                "Tecnologias: " + ", ".join(exp.tecnologias),
+                "Tecnologias: " + _lista_tecnologias(exp.tecnologias),
                 _estilo_tecnologias,
             )
         )
@@ -149,8 +187,11 @@ def _bloco_experiencia(exp: Experiencia) -> list:
 
 def _bloco_formacao(form: Formacao) -> list:
     return [
-        Paragraph(f"{form.curso} ({form.nivel.value})", _estilo_subtitulo),
-        Paragraph(form.instituicao, _estilo_corpo),
+        Paragraph(
+            f"{_escapa(form.curso)} ({_escapa(form.nivel.value)})",
+            _estilo_subtitulo,
+        ),
+        Paragraph(_escapa(form.instituicao), _estilo_corpo),
         Paragraph(_formata_periodo(form.data_inicio, form.data_fim), _estilo_periodo),
         Spacer(1, 4),
     ]
@@ -158,18 +199,18 @@ def _bloco_formacao(form: Formacao) -> list:
 
 def _bloco_projeto(proj: Projeto) -> list:
     blocos = [
-        Paragraph(proj.nome, _estilo_subtitulo),
-        Paragraph(proj.descricao, _estilo_corpo),
+        Paragraph(_escapa(proj.nome), _estilo_subtitulo),
+        Paragraph(_escapa_multiline(proj.descricao), _estilo_corpo),
     ]
     if proj.tecnologias:
         blocos.append(
             Paragraph(
-                "Tecnologias: " + ", ".join(proj.tecnologias),
+                "Tecnologias: " + _lista_tecnologias(proj.tecnologias),
                 _estilo_tecnologias,
             )
         )
     if proj.url:
-        blocos.append(Paragraph(str(proj.url), _estilo_corpo))
+        blocos.append(Paragraph(_escapa(str(proj.url)), _estilo_corpo))
     return blocos
 
 
@@ -200,7 +241,7 @@ def gerar_pdf(curriculo: CurriculoEntrada) -> bytes:
 
     # Cabecalho: nome + linha de contato
     flowables.append(
-        Paragraph(curriculo.dados_pessoais.nome_completo, _estilo_nome)
+        Paragraph(_escapa(curriculo.dados_pessoais.nome_completo), _estilo_nome)
     )
     flowables.append(
         Paragraph(_linha_contato(curriculo.dados_pessoais), _estilo_contato)
@@ -208,7 +249,9 @@ def gerar_pdf(curriculo: CurriculoEntrada) -> bytes:
 
     # Resumo profissional
     flowables.append(Paragraph("RESUMO PROFISSIONAL", _estilo_secao))
-    flowables.append(Paragraph(curriculo.resumo_profissional, _estilo_corpo))
+    flowables.append(
+        Paragraph(_escapa_multiline(curriculo.resumo_profissional), _estilo_corpo)
+    )
 
     # Experiencia profissional (so se houver)
     if curriculo.experiencias:
@@ -224,7 +267,7 @@ def gerar_pdf(curriculo: CurriculoEntrada) -> bytes:
     # Habilidades tecnicas: linha unica separada por virgula
     flowables.append(Paragraph("HABILIDADES TÉCNICAS", _estilo_secao))
     flowables.append(
-        Paragraph(", ".join(curriculo.habilidades), _estilo_corpo)
+        Paragraph(_lista_tecnologias(curriculo.habilidades), _estilo_corpo)
     )
 
     # Projetos (so se houver)
