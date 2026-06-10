@@ -2,6 +2,7 @@ import { Projeto } from '../../types/curriculo'
 import { projetoVazio } from '../../utils/curriculoVazio'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
+import { TagInput } from '../ui/TagInput'
 import { Textarea } from '../ui/Textarea'
 
 type Props = {
@@ -24,14 +25,6 @@ export function ProjetoList({ projetos, onChange }: Props) {
     valor: Projeto[K]
   ) {
     onChange(projetos.map((p, idx) => (idx === i ? { ...p, [campo]: valor } : p)))
-  }
-
-  function setTecnologias(i: number, texto: string) {
-    const lista = texto
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-    atualizar(i, 'tecnologias', lista)
   }
 
   return (
@@ -73,11 +66,12 @@ export function ProjetoList({ projetos, onChange }: Props) {
             hint="Maximo 500 caracteres"
           />
 
-          <Input
+          <TagInput
             label="Tecnologias"
-            value={proj.tecnologias.join(', ')}
-            onChange={(e) => setTecnologias(i, e.target.value)}
-            hint="Separe por virgulas: React, FastAPI, ..."
+            tags={proj.tecnologias}
+            onChange={(novas) => atualizar(i, 'tecnologias', novas)}
+            placeholder="Digite e tecle Enter: React, FastAPI, ..."
+            hint="Enter ou virgula adiciona. Backspace remove a ultima."
           />
 
           <Input

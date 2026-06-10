@@ -1,4 +1,4 @@
-import { Textarea } from '../ui/Textarea'
+import { TagInput } from '../ui/TagInput'
 
 type Props = {
   habilidades: string[]
@@ -6,29 +6,22 @@ type Props = {
 }
 
 /**
- * Habilidades sao digitadas como texto livre separado por virgula.
- * Internamente, viram um array de strings.
+ * Habilidades como chips removiveis.
  *
- * Escolha de UX: texto livre e mais rapido que adicionar tag por tag.
- * Espacos extras e itens vazios sao removidos automaticamente.
+ * Mesmo padrao de tecnologias em Experiencia e Projeto: o usuario
+ * digita uma habilidade por vez e tecla Enter/virgula. Mantem o
+ * formato esperado pelo backend (lista de strings) e da visual claro
+ * de quantas habilidades ja foram adicionadas.
  */
 export function HabilidadesField({ habilidades, onChange }: Props) {
-  function handleChange(texto: string) {
-    const lista = texto
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-    onChange(lista)
-  }
-
   return (
-    <Textarea
+    <TagInput
       label="Habilidades"
       required
-      value={habilidades.join(', ')}
-      onChange={(e) => handleChange(e.target.value)}
-      hint="Separe por virgulas. Ex: Python, JavaScript, React, FastAPI, PostgreSQL, Git, Docker"
-      placeholder="Python, JavaScript, React, ..."
+      tags={habilidades}
+      onChange={onChange}
+      placeholder="Python, JavaScript, React, FastAPI, ..."
+      hint="Cada habilidade vira uma palavra-chave para o ATS. Quanto mais relevantes, melhor."
     />
   )
 }

@@ -2,6 +2,7 @@ import { Experiencia } from '../../types/curriculo'
 import { experienciaVazia } from '../../utils/curriculoVazio'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
+import { TagInput } from '../ui/TagInput'
 import { Textarea } from '../ui/Textarea'
 
 type Props = {
@@ -26,14 +27,6 @@ export function ExperienciaList({ experiencias, onChange }: Props) {
     onChange(
       experiencias.map((e, idx) => (idx === i ? { ...e, [campo]: valor } : e))
     )
-  }
-
-  function setTecnologias(i: number, texto: string) {
-    const lista = texto
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-    atualizar(i, 'tecnologias', lista)
   }
 
   return (
@@ -115,11 +108,12 @@ export function ExperienciaList({ experiencias, onChange }: Props) {
             maxLength={500}
           />
 
-          <Input
+          <TagInput
             label="Tecnologias"
-            value={exp.tecnologias.join(', ')}
-            onChange={(e) => setTecnologias(i, e.target.value)}
-            hint="Separe por virgulas: Python, FastAPI, React"
+            tags={exp.tecnologias}
+            onChange={(novas) => atualizar(i, 'tecnologias', novas)}
+            placeholder="Digite e tecle Enter: Python, React, ..."
+            hint="Enter ou virgula adiciona uma tecnologia. Backspace remove a ultima."
           />
         </div>
       ))}
