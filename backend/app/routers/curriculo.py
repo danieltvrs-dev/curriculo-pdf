@@ -37,14 +37,15 @@ def _slug_arquivo(nome: str) -> str:
 
 @router.post(
     "",
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_200_OK,
     summary="Gera o PDF do curriculo a partir dos dados enviados",
     description=(
         "Recebe os dados do curriculo, valida via Pydantic e devolve "
-        "o PDF gerado pronto para download."
+        "o PDF gerado pronto para download. Status 200 (nao 201) porque "
+        "nao persistimos um recurso: so executamos uma transformacao."
     ),
     responses={
-        201: {
+        200: {
             "description": "PDF do curriculo gerado",
             "content": {"application/pdf": {}},
         },
