@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react'
 
+import { gerarCurriculoPdf } from '../../services/curriculo'
 import { CurriculoEntrada, DadosPessoais } from '../../types/curriculo'
 import { curriculoVazio } from '../../utils/curriculoVazio'
 import { podeEnviar } from '../../utils/validacao'
@@ -23,6 +24,7 @@ import { ProjetoList } from './ProjetoList'
  */
 export function Form() {
   const [curriculo, setCurriculo] = useState<CurriculoEntrada>(curriculoVazio)
+  const [enviando, setEnviando] = useState(false)
 
   function atualizarDadosPessoais(
     campo: keyof DadosPessoais,
@@ -34,11 +36,27 @@ export function Form() {
     })
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    // Por enquanto, so loga. Na peca 1.5 substituimos pela chamada axios.
-    console.log('Curriculo pronto para envio:', curriculo)
-    alert('Formulario validado! A integracao com o backend entra na proxima peca.')
+    if (enviando) return
+
+    setEnviando(true)
+    try {
+      await gerarCurriculoPdf(curriculo)
+    } catch (err: any) {
+      console.error('Erro ao gerar PDF:', err)
+      if (err?.response?.status === 422) {
+        alert(
+          'O servidor nao aceitou algum campo. Confira os campos com asterisco (*) e tente novamente.'
+        )
+      } else {
+        alert(
+          'Nao foi possivel gerar o PDF. Verifique se a API esta rodando em http://localhost:8000 e tente novamente.'
+        )
+      }
+    } finally {
+      setEnviando(false)
+    }
   }
 
   const habilitado = podeEnviar(curriculo)
@@ -132,10 +150,10 @@ export function Form() {
       </Section>
 
       <div className="flex flex-col items-end gap-2 mt-10 pt-6 border-t border-slate-200">
-        <Button type="submit" disabled={!habilitado}>
-          Gerar PDF
+        <Button type="submit" disabled={!habilitado || enviando}>
+          {enviando ? 'Gerando PDF...' : 'Gerar PDF'}
         </Button>
-        {!habilitado && (
+        {!habilitado && !enviando && (
           <p className="text-xs text-slate-500">
             Preencha os campos obrigatorios para habilitar o botao.
           </p>
