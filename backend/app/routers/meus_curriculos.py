@@ -8,7 +8,7 @@ proprios curriculos: a query sempre filtra por user_id.
 import re
 import unicodedata
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -21,6 +21,7 @@ from app.schemas import (
     CurriculoSalvarEntrada,
 )
 from app.services import gerar_pdf
+from app.services.templates import NOMES_VALIDOS, TEMPLATE_PADRAO
 
 router = APIRouter()
 
@@ -150,12 +151,22 @@ def deletar(
 )
 def gerar_pdf_salvo(
     curriculo_id: int,
+    template: str = Query(
+        default=TEMPLATE_PADRAO,
+        description=f"Template do PDF. Opcoes: {', '.join(NOMES_VALIDOS)}",
+    ),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Response:
+    if template not in NOMES_VALIDOS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Template invalido. Opcoes: {NOMES_VALIDOS}",
+        )
+
     cv = _buscar_meu(db, user.id, curriculo_id)
     entrada = CurriculoEntrada.model_validate(cv.dados)
-    pdf_bytes = gerar_pdf(entrada)
+    pdf_bytes = gerar_pdf(entrada, template=template)
     slug = _slug_arquivo(cv.nome)
     return Response(
         content=pdf_bytes,
