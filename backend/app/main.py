@@ -10,7 +10,7 @@ load_dotenv()
 # senao as tabelas nao ficam registradas no metadata do Base.
 from app import models  # noqa: F401, E402
 from app.database import Base, engine  # noqa: E402
-from app.routers import curriculo, ia  # noqa: E402
+from app.routers import auth, curriculo, ia  # noqa: E402
 
 # Cria as tabelas que ainda nao existem no banco. Idempotente:
 # se ja existir, nao faz nada. Para MVP basta; em producao usaria Alembic.
@@ -30,6 +30,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+app.include_router(
+    auth.router,
+    prefix="/auth",
+    tags=["auth"],
 )
 
 app.include_router(
