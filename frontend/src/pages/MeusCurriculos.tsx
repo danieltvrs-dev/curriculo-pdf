@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { EscolherTemplateModal } from '../components/form/EscolherTemplateModal'
 import { Banner } from '../components/ui/Banner'
 import { Button } from '../components/ui/Button'
 import { useAuth } from '../contexts/AuthContext'
 import * as service from '../services/meusCurriculos'
+import { TemplatePdf } from '../services/meusCurriculos'
 import { CurriculoResumo } from '../types/meusCurriculos'
 
 type Feedback = { variant: 'success' | 'error'; message: string }
@@ -14,6 +16,7 @@ export function MeusCurriculos() {
   const { user, logout } = useAuth()
   const [curriculos, setCurriculos] = useState<CurriculoResumo[] | null>(null)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
+  const [idParaBaixar, setIdParaBaixar] = useState<number | null>(null)
 
   useEffect(() => {
     service
@@ -38,12 +41,20 @@ export function MeusCurriculos() {
     }
   }
 
-  async function handleBaixar(id: number) {
+  function handleBaixar(id: number) {
+    // Abre o modal para escolher o template
+    setIdParaBaixar(id)
+  }
+
+  async function handleConfirmarTemplate(template: TemplatePdf) {
+    if (idParaBaixar === null) return
     try {
-      await service.baixarPdf(id)
+      await service.baixarPdf(idParaBaixar, template)
       setFeedback({ variant: 'success', message: 'PDF baixado.' })
     } catch {
       setFeedback({ variant: 'error', message: 'Erro ao baixar PDF.' })
+    } finally {
+      setIdParaBaixar(null)
     }
   }
 
@@ -141,6 +152,12 @@ export function MeusCurriculos() {
           </ul>
         )}
       </main>
+
+      <EscolherTemplateModal
+        isOpen={idParaBaixar !== null}
+        onClose={() => setIdParaBaixar(null)}
+        onConfirmar={handleConfirmarTemplate}
+      />
     </div>
   )
 }

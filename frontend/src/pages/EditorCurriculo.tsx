@@ -9,6 +9,7 @@ import { Textarea } from '../components/ui/Textarea'
 
 import { CertificacaoList } from '../components/form/CertificacaoList'
 import { DadosPessoaisFields } from '../components/form/DadosPessoaisFields'
+import { EscolherTemplateModal } from '../components/form/EscolherTemplateModal'
 import { ExperienciaList } from '../components/form/ExperienciaList'
 import { FormacaoList } from '../components/form/FormacaoList'
 import { HabilidadesField } from '../components/form/HabilidadesField'
@@ -17,6 +18,7 @@ import { MelhorarResumoButton } from '../components/form/MelhorarResumoButton'
 import { ProjetoList } from '../components/form/ProjetoList'
 
 import * as service from '../services/meusCurriculos'
+import { TemplatePdf } from '../services/meusCurriculos'
 import { CurriculoEntrada, DadosPessoais } from '../types/curriculo'
 import { curriculoVazio } from '../utils/curriculoVazio'
 import { podeEnviar } from '../utils/validacao'
@@ -33,6 +35,7 @@ export function EditorCurriculo() {
   const [curriculo, setCurriculo] = useState<CurriculoEntrada>(curriculoVazio)
   const [enviando, setEnviando] = useState(false)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
+  const [idParaBaixar, setIdParaBaixar] = useState<number | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -96,18 +99,26 @@ export function EditorCurriculo() {
     setFeedback(null)
     const cvId = await salvar()
     if (cvId !== null) {
-      try {
-        await service.baixarPdf(cvId)
-        setFeedback({ variant: 'success', message: 'PDF gerado e baixado.' })
-        if (!isEditando) navigate(`/editar/${cvId}`, { replace: true })
-      } catch {
-        setFeedback({
-          variant: 'error',
-          message: 'Salvou, mas falhou ao baixar o PDF.',
-        })
-      }
+      setFeedback({ variant: 'success', message: 'Curriculo salvo.' })
+      setIdParaBaixar(cvId)
     }
     setEnviando(false)
+  }
+
+  async function handleConfirmarTemplate(template: TemplatePdf) {
+    if (idParaBaixar === null) return
+    try {
+      await service.baixarPdf(idParaBaixar, template)
+      setFeedback({ variant: 'success', message: 'PDF gerado e baixado.' })
+      if (!isEditando) navigate(`/editar/${idParaBaixar}`, { replace: true })
+    } catch {
+      setFeedback({
+        variant: 'error',
+        message: 'Falhou ao baixar o PDF.',
+      })
+    } finally {
+      setIdParaBaixar(null)
+    }
   }
 
   const habilitado = nome.trim().length > 0 && podeEnviar(curriculo)
@@ -285,6 +296,12 @@ export function EditorCurriculo() {
           </p>
         )}
       </form>
+
+      <EscolherTemplateModal
+        isOpen={idParaBaixar !== null}
+        onClose={() => setIdParaBaixar(null)}
+        onConfirmar={handleConfirmarTemplate}
+      />
     </div>
   )
 }
