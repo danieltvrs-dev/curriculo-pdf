@@ -15,6 +15,7 @@ import { DadosPessoaisFields } from './DadosPessoaisFields'
 import { ExperienciaList } from './ExperienciaList'
 import { FormacaoList } from './FormacaoList'
 import { HabilidadesField } from './HabilidadesField'
+import { MelhorarResumoButton } from './MelhorarResumoButton'
 import { ProjetoList } from './ProjetoList'
 
 type Feedback = { variant: 'success' | 'error'; message: string }
@@ -124,6 +125,12 @@ export function Form() {
           }
           maxLength={600}
           hint={`${curriculo.resumo_profissional.length}/600 caracteres (minimo 50)`}
+        />
+        <MelhorarResumoButton
+          textoAtual={curriculo.resumo_profissional}
+          onAceitar={(texto) =>
+            setCurriculo({ ...curriculo, resumo_profissional: texto })
+          }
         />
       </Section>
 
