@@ -1,3 +1,4 @@
+from app.schemas.auth import Token, UserLogin, UserRegistro, UserResposta
 from app.schemas.curriculo import (
     CurriculoEntrada,
     DadosPessoais,
@@ -14,4 +15,8 @@ __all__ = [
     "Formacao",
     "NivelFormacao",
     "Projeto",
+    "Token",
+    "UserLogin",
+    "UserRegistro",
+    "UserResposta",
 ]
