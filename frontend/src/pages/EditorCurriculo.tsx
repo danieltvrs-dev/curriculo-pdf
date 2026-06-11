@@ -7,10 +7,12 @@ import { Input } from '../components/ui/Input'
 import { Section } from '../components/ui/Section'
 import { Textarea } from '../components/ui/Textarea'
 
+import { CertificacaoList } from '../components/form/CertificacaoList'
 import { DadosPessoaisFields } from '../components/form/DadosPessoaisFields'
 import { ExperienciaList } from '../components/form/ExperienciaList'
 import { FormacaoList } from '../components/form/FormacaoList'
 import { HabilidadesField } from '../components/form/HabilidadesField'
+import { IdiomaList } from '../components/form/IdiomaList'
 import { MelhorarResumoButton } from '../components/form/MelhorarResumoButton'
 import { ProjetoList } from '../components/form/ProjetoList'
 
@@ -236,6 +238,30 @@ export function EditorCurriculo() {
             projetos={curriculo.projetos}
             onChange={(novos) =>
               setCurriculo({ ...curriculo, projetos: novos })
+            }
+          />
+        </Section>
+
+        <Section
+          title="Idiomas"
+          description="Opcional. Inclua so se for relevante para a vaga."
+        >
+          <IdiomaList
+            idiomas={curriculo.idiomas}
+            onChange={(novos) =>
+              setCurriculo({ ...curriculo, idiomas: novos })
+            }
+          />
+        </Section>
+
+        <Section
+          title="Certificacoes"
+          description="Opcional. Cursos, certificacoes profissionais e treinamentos relevantes."
+        >
+          <CertificacaoList
+            certificacoes={curriculo.certificacoes}
+            onChange={(novas) =>
+              setCurriculo({ ...curriculo, certificacoes: novas })
             }
           />
         </Section>

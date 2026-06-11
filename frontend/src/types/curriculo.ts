@@ -15,6 +15,14 @@ export enum NivelFormacao {
   Doutorado = 'Doutorado',
 }
 
+export enum NivelIdioma {
+  Basico = 'Basico',
+  Intermediario = 'Intermediario',
+  Avancado = 'Avancado',
+  Fluente = 'Fluente',
+  Nativo = 'Nativo',
+}
+
 export type DadosPessoais = {
   nome_completo: string
   email: string
@@ -49,6 +57,18 @@ export type Projeto = {
   url?: string | null
 }
 
+export type Idioma = {
+  idioma: string
+  nivel: NivelIdioma
+}
+
+export type Certificacao = {
+  nome: string
+  instituicao: string
+  ano?: number | null
+  url?: string | null
+}
+
 export type CurriculoEntrada = {
   dados_pessoais: DadosPessoais
   resumo_profissional: string
@@ -56,4 +76,6 @@ export type CurriculoEntrada = {
   formacoes: Formacao[]
   habilidades: string[]
   projetos: Projeto[]
+  idiomas: Idioma[]
+  certificacoes: Certificacao[]
 }

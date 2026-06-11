@@ -6,11 +6,14 @@
  */
 
 import {
+  Certificacao,
   CurriculoEntrada,
   DadosPessoais,
   Experiencia,
   Formacao,
+  Idioma,
   NivelFormacao,
+  NivelIdioma,
   Projeto,
 } from '../types/curriculo'
 
@@ -48,6 +51,18 @@ export const projetoVazio: Projeto = {
   url: '',
 }
 
+export const idiomaVazio: Idioma = {
+  idioma: '',
+  nivel: NivelIdioma.Intermediario,
+}
+
+export const certificacaoVazia: Certificacao = {
+  nome: '',
+  instituicao: '',
+  ano: null,
+  url: '',
+}
+
 export const curriculoVazio: CurriculoEntrada = {
   dados_pessoais: { ...dadosPessoaisVazios },
   resumo_profissional: '',
@@ -55,4 +70,6 @@ export const curriculoVazio: CurriculoEntrada = {
   formacoes: [{ ...formacaoVazia }],
   habilidades: [],
   projetos: [],
+  idiomas: [],
+  certificacoes: [],
 }

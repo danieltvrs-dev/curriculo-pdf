@@ -40,5 +40,9 @@ export function prepararParaEnvio(c: CurriculoEntrada): CurriculoEntrada {
       ...p,
       url: vazioVirarNull(p.url),
     })),
+    certificacoes: c.certificacoes.map((cert) => ({
+      ...cert,
+      url: vazioVirarNull(cert.url),
+    })),
   }
 }
