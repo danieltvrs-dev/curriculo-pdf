@@ -3,6 +3,31 @@ import { CurriculoDetalhe, CurriculoResumo } from '../types/meusCurriculos'
 import { prepararParaEnvio } from '../utils/prepararEnvio'
 import api from './api'
 
+export type TemplatePdf = 'classico' | 'moderno' | 'compacto'
+
+export const TEMPLATES_PDF: {
+  id: TemplatePdf
+  nome: string
+  descricao: string
+}[] = [
+  {
+    id: 'classico',
+    nome: 'Clássico',
+    descricao: 'Sóbrio, máxima compatibilidade com ATS. Recomendado.',
+  },
+  {
+    id: 'moderno',
+    nome: 'Moderno',
+    descricao:
+      'Nome e seções em azul, linha decorativa. Ainda 100% ATS-friendly.',
+  },
+  {
+    id: 'compacto',
+    nome: 'Compacto',
+    descricao: 'Fontes e espaços reduzidos. Cabe mais conteúdo por página.',
+  },
+]
+
 export async function listar(): Promise<CurriculoResumo[]> {
   const r = await api.get<CurriculoResumo[]>('/meus-curriculos')
   return r.data
@@ -40,9 +65,13 @@ export async function deletar(id: number): Promise<void> {
   await api.delete(`/meus-curriculos/${id}`)
 }
 
-export async function baixarPdf(id: number): Promise<void> {
+export async function baixarPdf(
+  id: number,
+  template: TemplatePdf = 'classico'
+): Promise<void> {
   const r = await api.get(`/meus-curriculos/${id}/pdf`, {
     responseType: 'blob',
+    params: { template },
   })
   const blob = r.data as Blob
   const url = URL.createObjectURL(blob)
