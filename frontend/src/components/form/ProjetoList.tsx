@@ -4,6 +4,7 @@ import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { TagInput } from '../ui/TagInput'
 import { Textarea } from '../ui/Textarea'
+import { MelhorarDescricaoButton } from './MelhorarDescricaoButton'
 
 type Props = {
   projetos: Projeto[]
@@ -64,6 +65,12 @@ export function ProjetoList({ projetos, onChange }: Props) {
             onChange={(e) => atualizar(i, 'descricao', e.target.value)}
             maxLength={500}
             hint="Maximo 500 caracteres"
+          />
+          <MelhorarDescricaoButton
+            tipo="projeto"
+            textoAtual={proj.descricao}
+            contexto={proj.nome}
+            onAceitar={(texto) => atualizar(i, 'descricao', texto)}
           />
 
           <TagInput

@@ -4,6 +4,7 @@ import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { TagInput } from '../ui/TagInput'
 import { Textarea } from '../ui/Textarea'
+import { MelhorarDescricaoButton } from './MelhorarDescricaoButton'
 
 type Props = {
   experiencias: Experiencia[]
@@ -106,6 +107,12 @@ export function ExperienciaList({ experiencias, onChange }: Props) {
             onChange={(e) => atualizar(i, 'descricao', e.target.value)}
             hint="Maximo 500 caracteres"
             maxLength={500}
+          />
+          <MelhorarDescricaoButton
+            tipo="experiencia"
+            textoAtual={exp.descricao}
+            contexto={`${exp.cargo} em ${exp.empresa}`.trim()}
+            onAceitar={(texto) => atualizar(i, 'descricao', texto)}
           />
 
           <TagInput
