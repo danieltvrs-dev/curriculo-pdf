@@ -6,44 +6,53 @@ da API, so o backend conhece. Cada endpoint mantem regras de validacao
 (tamanhos minimos) pra evitar chamadas desperdicadas.
 """
 
+from typing import Callable
+
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
-from app.services import melhorar_resumo
+from app.services import (
+    melhorar_descricao_experiencia,
+    melhorar_descricao_projeto,
+    melhorar_resumo,
+)
 
 router = APIRouter()
 
 
+# ---------------------------------------------------------------------------
+# Schemas
+# ---------------------------------------------------------------------------
+
+
 class MelhorarResumoEntrada(BaseModel):
-    texto: str = Field(
-        ...,
-        min_length=50,
-        max_length=600,
-        description="Resumo profissional original que sera reescrito.",
-    )
+    texto: str = Field(..., min_length=50, max_length=600)
 
 
-class MelhorarResumoSaida(BaseModel):
-    texto: str = Field(..., description="Resumo reescrito pela IA.")
+class MelhorarDescricaoEntrada(BaseModel):
+    texto: str = Field(..., min_length=10, max_length=500)
+    contexto: str = Field(default="", max_length=240)
 
 
-@router.post(
-    "/melhorar-resumo",
-    response_model=MelhorarResumoSaida,
-    summary="Reescreve o resumo profissional otimizado para ATS",
-)
-def endpoint_melhorar_resumo(dados: MelhorarResumoEntrada) -> MelhorarResumoSaida:
+class TextoSaida(BaseModel):
+    texto: str
+
+
+# ---------------------------------------------------------------------------
+# Helper de tratamento de erros
+# ---------------------------------------------------------------------------
+
+
+def _executar(funcao: Callable[..., str], **kwargs) -> TextoSaida:
+    """Executa a funcao do service, traduzindo erros pra HTTPException."""
     try:
-        texto_melhorado = melhorar_resumo(dados.texto)
+        resultado = funcao(**kwargs)
     except RuntimeError as e:
-        # Chave ausente ou resposta vazia do modelo
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
     except Exception as e:
-        # Erros da API (auth, quota, rede). Mensagem generica pro cliente,
-        # detalhes no log do servidor.
         mensagem = str(e)
         if "API key" in mensagem or "authentication" in mensagem.lower():
             raise HTTPException(
@@ -60,4 +69,48 @@ def endpoint_melhorar_resumo(dados: MelhorarResumoEntrada) -> MelhorarResumoSaid
             detail=f"Erro ao chamar a IA: {mensagem}",
         )
 
-    return MelhorarResumoSaida(texto=texto_melhorado)
+    return TextoSaida(texto=resultado)
+
+
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/melhorar-resumo",
+    response_model=TextoSaida,
+    summary="Reescreve o resumo profissional otimizado para ATS",
+)
+def endpoint_melhorar_resumo(dados: MelhorarResumoEntrada) -> TextoSaida:
+    return _executar(melhorar_resumo, texto=dados.texto)
+
+
+@router.post(
+    "/melhorar-descricao-experiencia",
+    response_model=TextoSaida,
+    summary="Reescreve a descricao de uma experiencia profissional",
+)
+def endpoint_melhorar_descricao_experiencia(
+    dados: MelhorarDescricaoEntrada,
+) -> TextoSaida:
+    return _executar(
+        melhorar_descricao_experiencia,
+        texto=dados.texto,
+        contexto=dados.contexto,
+    )
+
+
+@router.post(
+    "/melhorar-descricao-projeto",
+    response_model=TextoSaida,
+    summary="Reescreve a descricao de um projeto",
+)
+def endpoint_melhorar_descricao_projeto(
+    dados: MelhorarDescricaoEntrada,
+) -> TextoSaida:
+    return _executar(
+        melhorar_descricao_projeto,
+        texto=dados.texto,
+        contexto=dados.contexto,
+    )
