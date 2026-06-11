@@ -22,3 +22,7 @@ htmlcov/
 build/
 dist/
 *.egg-info/
+
+# Banco SQLite local
+*.db
+*.db-journal
