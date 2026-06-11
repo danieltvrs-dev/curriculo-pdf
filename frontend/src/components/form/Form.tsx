@@ -1,10 +1,12 @@
 import { FormEvent, useState } from 'react'
 
+import { usePersistencia } from '../../hooks/usePersistencia'
 import { gerarCurriculoPdf } from '../../services/curriculo'
 import { CurriculoEntrada, DadosPessoais } from '../../types/curriculo'
 import { curriculoVazio } from '../../utils/curriculoVazio'
 import { podeEnviar } from '../../utils/validacao'
 
+import { Banner } from '../ui/Banner'
 import { Button } from '../ui/Button'
 import { Section } from '../ui/Section'
 import { Textarea } from '../ui/Textarea'
@@ -15,16 +17,15 @@ import { FormacaoList } from './FormacaoList'
 import { HabilidadesField } from './HabilidadesField'
 import { ProjetoList } from './ProjetoList'
 
-/**
- * Formulario principal do curriculo.
- *
- * Mantem o estado completo em um objeto (curriculo). Cada secao recebe
- * um pedaco desse estado e uma callback para atualizar. O envio so loga
- * no console por enquanto: a integracao com o backend entra na peca 1.5.
- */
+type Feedback = { variant: 'success' | 'error'; message: string }
+
+const CHAVE_RASCUNHO = 'curriculo-pdf:rascunho'
+
 export function Form() {
-  const [curriculo, setCurriculo] = useState<CurriculoEntrada>(curriculoVazio)
+  const [curriculo, setCurriculo, limparCurriculo] =
+    usePersistencia<CurriculoEntrada>(CHAVE_RASCUNHO, curriculoVazio)
   const [enviando, setEnviando] = useState(false)
+  const [feedback, setFeedback] = useState<Feedback | null>(null)
 
   function atualizarDadosPessoais(
     campo: keyof DadosPessoais,
@@ -41,39 +42,64 @@ export function Form() {
     if (enviando) return
 
     setEnviando(true)
+    setFeedback(null)
     try {
       await gerarCurriculoPdf(curriculo)
+      setFeedback({
+        variant: 'success',
+        message: 'PDF gerado e baixado com sucesso.',
+      })
     } catch (err: any) {
       console.error('Erro ao gerar PDF:', err)
       if (err?.response?.status === 422) {
-        alert(
-          'O servidor nao aceitou algum campo. Confira os campos com asterisco (*) e tente novamente.'
-        )
+        setFeedback({
+          variant: 'error',
+          message:
+            'O servidor nao aceitou algum campo. Verifique os campos com asterisco (*) e tente novamente.',
+        })
       } else {
-        alert(
-          'Nao foi possivel gerar o PDF. Verifique se a API esta rodando em http://localhost:8000 e tente novamente.'
-        )
+        setFeedback({
+          variant: 'error',
+          message:
+            'Nao foi possivel gerar o PDF. Verifique se a API esta rodando em http://localhost:8000.',
+        })
       }
     } finally {
       setEnviando(false)
     }
   }
 
+  function handleLimpar() {
+    const confirma = window.confirm(
+      'Tem certeza que quer limpar todo o formulario? Os dados serao perdidos.'
+    )
+    if (!confirma) return
+    limparCurriculo()
+    setFeedback({ variant: 'success', message: 'Formulario limpo.' })
+  }
+
   const habilitado = podeEnviar(curriculo)
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="max-w-3xl mx-auto px-6 py-10"
-    >
+    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-6 py-10">
       <header className="mb-10">
         <h1 className="text-2xl font-bold text-slate-900">
           Gerador de Curriculo em PDF
         </h1>
         <p className="mt-1 text-sm text-slate-600">
           Preencha os campos abaixo e baixe seu curriculo otimizado para ATS.
+          Suas alteracoes sao salvas automaticamente neste navegador.
         </p>
       </header>
+
+      {feedback && (
+        <Banner
+          variant={feedback.variant}
+          message={feedback.message}
+          onClose={() => setFeedback(null)}
+          autoCloseMs={feedback.variant === 'success' ? 4000 : undefined}
+        />
+      )}
 
       <Section
         title="Dados Pessoais"
@@ -149,15 +175,20 @@ export function Form() {
         />
       </Section>
 
-      <div className="flex flex-col items-end gap-2 mt-10 pt-6 border-t border-slate-200">
-        <Button type="submit" disabled={!habilitado || enviando}>
-          {enviando ? 'Gerando PDF...' : 'Gerar PDF'}
+      <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-end gap-3 mt-10 pt-6 border-t border-slate-200">
+        <Button variant="ghost" type="button" onClick={handleLimpar}>
+          Limpar formulario
         </Button>
-        {!habilitado && !enviando && (
-          <p className="text-xs text-slate-500">
-            Preencha os campos obrigatorios para habilitar o botao.
-          </p>
-        )}
+        <div className="flex flex-col items-end gap-2">
+          <Button type="submit" disabled={!habilitado || enviando}>
+            {enviando ? 'Gerando PDF...' : 'Gerar PDF'}
+          </Button>
+          {!habilitado && !enviando && (
+            <p className="text-xs text-slate-500">
+              Preencha os campos obrigatorios para habilitar o botao.
+            </p>
+          )}
+        </div>
       </div>
     </form>
   )
