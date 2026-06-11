@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import curriculo
+from app.routers import curriculo, ia
 
 load_dotenv()
 
@@ -28,6 +28,12 @@ app.include_router(
     curriculo.router,
     prefix="/curriculos",
     tags=["curriculos"],
+)
+
+app.include_router(
+    ia.router,
+    prefix="/ia",
+    tags=["ia"],
 )
 
 
