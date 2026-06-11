@@ -284,4 +284,4 @@ Para a feature de IA:
 
 ## Autoria
 
-Construído por [Daniel Tavares](https://github.com/danieltvrs-dev) como projeto de estudo durante a graduação em Análise e Desenvolvimento de Sistemas. Desenvolvimento guiado por IA (Claude Code), com foco em entender cada decisão técnica.
+Construído por [Daniel Tavares](https://github.com/danieltvrs-dev) como projeto de estudo durante a graduação em Análise e Desenvolvimento de Sistemas. 
