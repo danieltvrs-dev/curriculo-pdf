@@ -10,7 +10,7 @@ load_dotenv()
 # senao as tabelas nao ficam registradas no metadata do Base.
 from app import models  # noqa: F401, E402
 from app.database import Base, engine  # noqa: E402
-from app.routers import auth, curriculo, ia  # noqa: E402
+from app.routers import auth, curriculo, ia, meus_curriculos  # noqa: E402
 
 # Cria as tabelas que ainda nao existem no banco. Idempotente:
 # se ja existir, nao faz nada. Para MVP basta; em producao usaria Alembic.
@@ -42,6 +42,12 @@ app.include_router(
     curriculo.router,
     prefix="/curriculos",
     tags=["curriculos"],
+)
+
+app.include_router(
+    meus_curriculos.router,
+    prefix="/meus-curriculos",
+    tags=["meus-curriculos"],
 )
 
 app.include_router(

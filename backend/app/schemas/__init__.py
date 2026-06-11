@@ -7,6 +7,11 @@ from app.schemas.curriculo import (
     NivelFormacao,
     Projeto,
 )
+from app.schemas.meus_curriculos import (
+    CurriculoDetalhe,
+    CurriculoResumo,
+    CurriculoSalvarEntrada,
+)
 
 __all__ = [
     "CurriculoEntrada",
@@ -19,4 +24,7 @@ __all__ = [
     "UserLogin",
     "UserRegistro",
     "UserResposta",
+    "CurriculoDetalhe",
+    "CurriculoResumo",
+    "CurriculoSalvarEntrada",
 ]
