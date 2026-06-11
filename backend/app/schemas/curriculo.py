@@ -24,6 +24,16 @@ class NivelFormacao(str, Enum):
     DOUTORADO = "Doutorado"
 
 
+class NivelIdioma(str, Enum):
+    """Niveis de proficiencia em idioma."""
+
+    BASICO = "Basico"
+    INTERMEDIARIO = "Intermediario"
+    AVANCADO = "Avancado"
+    FLUENTE = "Fluente"
+    NATIVO = "Nativo"
+
+
 class DadosPessoais(BaseModel):
     """Identificacao e contato. Tudo que o recrutador precisa pra te chamar."""
 
@@ -84,6 +94,22 @@ class Projeto(BaseModel):
     url: Optional[HttpUrl] = None
 
 
+class Idioma(BaseModel):
+    """Idioma com nivel de proficiencia."""
+
+    idioma: str = Field(..., min_length=2, max_length=60)
+    nivel: NivelIdioma
+
+
+class Certificacao(BaseModel):
+    """Certificacao ou curso de curta duracao relevante."""
+
+    nome: str = Field(..., min_length=2, max_length=160)
+    instituicao: str = Field(..., min_length=2, max_length=120)
+    ano: Optional[int] = Field(default=None, ge=1900, le=2100)
+    url: Optional[HttpUrl] = None
+
+
 class CurriculoEntrada(BaseModel):
     """
     Objeto raiz da requisicao POST /curriculo.
@@ -100,3 +126,5 @@ class CurriculoEntrada(BaseModel):
     formacoes: list[Formacao] = Field(..., min_length=1)
     habilidades: list[str] = Field(..., min_length=1)
     projetos: list[Projeto] = Field(default_factory=list)
+    idiomas: list[Idioma] = Field(default_factory=list)
+    certificacoes: list[Certificacao] = Field(default_factory=list)

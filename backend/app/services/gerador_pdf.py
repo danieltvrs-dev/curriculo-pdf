@@ -30,10 +30,12 @@ from reportlab.platypus import (
 )
 
 from app.schemas import (
+    Certificacao,
     CurriculoEntrada,
     DadosPessoais,
     Experiencia,
     Formacao,
+    Idioma,
     Projeto,
 )
 
@@ -214,6 +216,26 @@ def _bloco_projeto(proj: Projeto) -> list:
     return blocos
 
 
+def _linha_idioma(idi: Idioma) -> str:
+    return f"{_escapa(idi.idioma)} — {_escapa(idi.nivel.value)}"
+
+
+def _bloco_certificacao(cert: Certificacao) -> list:
+    cabecalho = _escapa(cert.nome)
+    detalhe_partes: list[str] = [_escapa(cert.instituicao)]
+    if cert.ano is not None:
+        detalhe_partes.append(str(cert.ano))
+    detalhe = " · ".join(detalhe_partes)
+
+    blocos = [
+        Paragraph(cabecalho, _estilo_subtitulo),
+        Paragraph(detalhe, _estilo_corpo),
+    ]
+    if cert.url:
+        blocos.append(Paragraph(_escapa(str(cert.url)), _estilo_tecnologias))
+    return blocos
+
+
 # ---------------------------------------------------------------------------
 # Funcao principal
 # ---------------------------------------------------------------------------
@@ -275,6 +297,18 @@ def gerar_pdf(curriculo: CurriculoEntrada) -> bytes:
         flowables.append(Paragraph("PROJETOS", _estilo_secao))
         for proj in curriculo.projetos:
             flowables.append(KeepTogether(_bloco_projeto(proj)))
+
+    # Idiomas (so se houver): linha unica com "Idioma — Nivel" separados por ·
+    if curriculo.idiomas:
+        flowables.append(Paragraph("IDIOMAS", _estilo_secao))
+        linha = " · ".join(_linha_idioma(idi) for idi in curriculo.idiomas)
+        flowables.append(Paragraph(linha, _estilo_corpo))
+
+    # Certificacoes (so se houver)
+    if curriculo.certificacoes:
+        flowables.append(Paragraph("CERTIFICAÇÕES", _estilo_secao))
+        for cert in curriculo.certificacoes:
+            flowables.append(KeepTogether(_bloco_certificacao(cert)))
 
     documento.build(flowables)
     return buffer.getvalue()
