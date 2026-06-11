@@ -4,9 +4,17 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import curriculo, ia
-
 load_dotenv()
+
+# IMPORTANTE: importar app.models ANTES de chamar create_all,
+# senao as tabelas nao ficam registradas no metadata do Base.
+from app import models  # noqa: F401, E402
+from app.database import Base, engine  # noqa: E402
+from app.routers import curriculo, ia  # noqa: E402
+
+# Cria as tabelas que ainda nao existem no banco. Idempotente:
+# se ja existir, nao faz nada. Para MVP basta; em producao usaria Alembic.
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Gerador de Curriculo em PDF",
