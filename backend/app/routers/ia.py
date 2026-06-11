@@ -6,7 +6,6 @@ da API, so o backend conhece. Cada endpoint mantem regras de validacao
 (tamanhos minimos) pra evitar chamadas desperdicadas.
 """
 
-from anthropic import APIError, AuthenticationError, RateLimitError
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
@@ -36,25 +35,29 @@ class MelhorarResumoSaida(BaseModel):
 def endpoint_melhorar_resumo(dados: MelhorarResumoEntrada) -> MelhorarResumoSaida:
     try:
         texto_melhorado = melhorar_resumo(dados.texto)
-    except AuthenticationError:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Chave da API da Anthropic invalida ou ausente.",
-        )
-    except RateLimitError:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Limite de requisicoes atingido. Tente novamente em instantes.",
-        )
-    except APIError as e:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Erro ao chamar a IA: {e.message}",
-        )
     except RuntimeError as e:
+        # Chave ausente ou resposta vazia do modelo
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
+        )
+    except Exception as e:
+        # Erros da API (auth, quota, rede). Mensagem generica pro cliente,
+        # detalhes no log do servidor.
+        mensagem = str(e)
+        if "API key" in mensagem or "authentication" in mensagem.lower():
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Chave da API do Google invalida ou ausente.",
+            )
+        if "quota" in mensagem.lower() or "rate" in mensagem.lower():
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Limite de requisicoes atingido. Tente em instantes.",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Erro ao chamar a IA: {mensagem}",
         )
 
     return MelhorarResumoSaida(texto=texto_melhorado)
