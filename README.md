@@ -10,7 +10,7 @@ Projeto pessoal de estudo e portfólio. Construído passo a passo, em conversa c
 
 ## Funcionalidades
 
-- **Cadastro e login** com senha bcrypt e sessão via JWT.
+- **Cadastro e login** com senha bcrypt, access token JWT curto + refresh token em cookie httpOnly (revogável no backend).
 - **CRUD de currículos** por usuário, persistido em banco (SQLite local, PostgreSQL pronto para deploy).
 - **Editor completo** com seções de Dados Pessoais, Resumo Profissional, Experiência, Formação, Habilidades, Projetos, Idiomas e Certificações.
 - **Gerador de PDF ATS-friendly**: uma coluna, fonte Helvetica, hierarquia textual clara, sem ícones decorativos.
@@ -133,7 +133,10 @@ Interface em `http://localhost:5173`.
 | `CORS_ORIGINS` | não | Origens permitidas no CORS. Padrão: `http://localhost:5173` |
 | `JWT_SECRET` | **sim** | Chave para assinar tokens JWT |
 | `JWT_ALGORITHM` | não | Algoritmo do JWT. Padrão: `HS256` |
-| `JWT_EXPIRA_MINUTOS` | não | Validade do token. Padrão: `10080` (7 dias) |
+| `ACCESS_TOKEN_EXPIRA_MINUTOS` | não | Validade do access token. Padrão: `15` |
+| `REFRESH_TOKEN_EXPIRA_MINUTOS` | não | Validade do refresh token. Padrão: `43200` (30 dias) |
+| `COOKIE_SECURE` | não | `true` em produção (HTTPS), `false` em dev local |
+| `COOKIE_SAMESITE` | não | `lax` em mesmo site, `none` em cross-site (exige HTTPS) |
 | `GOOGLE_API_KEY` | apenas para IA | Chave do Google AI Studio |
 | `GEMINI_MODEL` | não | Modelo Gemini. Padrão: `gemini-2.5-flash` |
 
@@ -154,15 +157,15 @@ curriculo-pdf/
 │   │   ├── main.py                 ponto de entrada do FastAPI
 │   │   ├── database.py             engine + SessionLocal + get_db
 │   │   ├── dependencies.py         get_current_user (proteção de rotas)
-│   │   ├── models/                 modelos SQLAlchemy (User, Curriculo)
+│   │   ├── models/                 modelos SQLAlchemy (User, Curriculo, RefreshToken)
 │   │   ├── schemas/                schemas Pydantic
 │   │   ├── routers/                endpoints HTTP por tema
-│   │   │   ├── auth.py             /auth/registrar, /auth/login, /auth/me
+│   │   │   ├── auth.py             /auth/registrar, /auth/login, /auth/refresh, /auth/logout, /auth/me
 │   │   │   ├── curriculo.py        /curriculos (anônimo, legado)
 │   │   │   ├── meus_curriculos.py  /meus-curriculos (CRUD protegido)
 │   │   │   └── ia.py               /ia/melhorar-* (proxy seguro pro Gemini)
 │   │   └── services/               regras de negócio
-│   │       ├── auth.py             hash bcrypt + JWT
+│   │       ├── auth.py             hash bcrypt + access JWT + refresh token + config cookie
 │   │       ├── gerador_pdf.py      despachador de templates
 │   │       ├── templates/          comum.py + classico.py + moderno.py + compacto.py
 │   │       └── melhorador_ia.py    chamadas ao Gemini
@@ -214,9 +217,18 @@ Em desenvolvimento, instalar PostgreSQL é fricção desnecessária. SQLite é u
 
 Anthropic Claude e OpenAI exigem cartão de crédito para gerar chave da API. Gemini tem free tier oficial (15 chamadas/min, 1500/dia) sem cobrança. Para um projeto de portfólio, é mais que suficiente.
 
-### Por que JWT em localStorage?
+### Por que access token + refresh token em cookie httpOnly?
 
-Solução mais simples e didática, padrão na indústria para SPAs. Tem trade-offs de segurança comparado a cookies httpOnly (vulnerável a XSS), mas para escopo de aprendizado e MVP é aceitável. O roadmap inclui migrar para cookie httpOnly quando o projeto for para produção real.
+A primeira versão da auth usava um JWT longo guardado em `localStorage`. Era didática mas tinha duas fragilidades reais: vulnerável a XSS (qualquer JS injetado lê o token) e não permitia logout efetivo (o token continuava válido até expirar).
+
+A versão atual usa o padrão moderno da indústria:
+
+- **Access token** (JWT) com vida **curta** (15 min). Vive em memória do React, anexado no header `Authorization` automaticamente. Se vazar, janela de risco é curta.
+- **Refresh token** opaco com vida **longa** (30 dias). Vai num **cookie httpOnly**, inacessível por JavaScript. O backend armazena só o hash SHA-256, igual senha.
+- **Rotação a cada refresh:** o token antigo é revogado, um novo é emitido. Defesa contra replay.
+- **Logout real:** o backend marca o refresh como `revogado_em` no banco. Próxima tentativa de refresh falha.
+
+O interceptor do axios faz o refresh transparente quando uma request volta 401: chama `/auth/refresh`, recebe novo access, retenta a request original. O usuário não percebe nada.
 
 ### Por que `dados: JSON` em vez de normalizar?
 
@@ -226,9 +238,10 @@ Cada currículo é usado todo de uma vez (gerar PDF). Não tem caso de uso de co
 
 ## Como funciona o fluxo principal
 
-1. Usuário cadastra/loga → recebe JWT, salvo em `localStorage`.
-2. Interceptor do axios anexa `Authorization: Bearer <token>` em toda request.
+1. Usuário cadastra/loga → backend devolve **access token** no body (vai pra memória do React) e **refresh token** num cookie httpOnly.
+2. Interceptor do axios anexa `Authorization: Bearer <access_token>` em toda request.
 3. Backend valida o JWT em `get_current_user` (dependência), busca o User no banco.
+4. Quando o access expira, o interceptor pega o 401, chama `/auth/refresh` (browser envia o cookie automaticamente), recebe novo access e retenta a request original. O usuário não percebe.
 4. Usuário preenche o formulário, clica em **Salvar e baixar PDF**.
 5. Frontend faz `POST /meus-curriculos` com os dados e recebe o registro persistido.
 6. Modal abre para escolher o template (Clássico, Moderno, Compacto).
@@ -269,11 +282,11 @@ Para a feature de IA:
 - IA também em descrição de Experiência e Projeto
 - Campos de Idiomas e Certificações
 - 3 templates de PDF (Clássico, Moderno, Compacto)
+- Refresh token + cookie httpOnly com rotação a cada refresh
 
 ### Próximos
 
 - Deploy: backend em Render/Railway, frontend em Vercel, banco PostgreSQL
-- Refresh token + cookie httpOnly (substituir localStorage)
 - Mais templates de PDF
 - Preview do PDF antes de baixar
 - Exportar/importar currículo em JSON
