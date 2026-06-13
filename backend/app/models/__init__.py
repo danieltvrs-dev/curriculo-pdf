@@ -7,6 +7,7 @@ algum momento antes do startup, sua tabela nao sera criada.
 """
 
 from app.models.curriculo import Curriculo
+from app.models.refresh_token import RefreshToken
 from app.models.user import User
 
-__all__ = ["User", "Curriculo"]
+__all__ = ["User", "Curriculo", "RefreshToken"]
