@@ -1,7 +1,7 @@
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react'
 
+import { setAccessToken } from '../services/api'
 import * as authService from '../services/auth'
-import { TOKEN_KEY } from '../services/api'
 import { User } from '../types/auth'
 
 type AuthContextValue = {
@@ -9,7 +9,7 @@ type AuthContextValue = {
   carregando: boolean
   login: (email: string, senha: string) => Promise<void>
   registrar: (nome: string, email: string, senha: string) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -18,19 +18,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [carregando, setCarregando] = useState(true)
 
-  // Ao montar, tenta hidratar o user a partir do token salvo.
+  // Ao montar, tenta refresh com o cookie httpOnly. Se houver sessao
+  // valida, recebe novo access token e busca o user.
   useEffect(() => {
     async function hidratar() {
-      const token = localStorage.getItem(TOKEN_KEY)
-      if (!token) {
-        setCarregando(false)
-        return
-      }
       try {
+        const novoAccess = await authService.refresh()
+        setAccessToken(novoAccess)
         const u = await authService.me()
         setUser(u)
       } catch {
-        localStorage.removeItem(TOKEN_KEY)
+        setAccessToken(null)
       } finally {
         setCarregando(false)
       }
@@ -40,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(email: string, senha: string) {
     const token = await authService.login(email, senha)
-    localStorage.setItem(TOKEN_KEY, token)
+    setAccessToken(token)
     const u = await authService.me()
     setUser(u)
   }
@@ -50,8 +48,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await login(email, senha)
   }
 
-  function logout() {
-    localStorage.removeItem(TOKEN_KEY)
+  async function logout() {
+    try {
+      await authService.logout()
+    } catch {
+      // Ignora erro no logout server-side: o importante e limpar o estado local.
+    }
+    setAccessToken(null)
     setUser(null)
   }
 

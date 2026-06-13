@@ -24,3 +24,12 @@ export async function me(): Promise<User> {
   const r = await api.get<User>('/auth/me')
   return r.data
 }
+
+export async function refresh(): Promise<string> {
+  const r = await api.post<LoginResposta>('/auth/refresh')
+  return r.data.access_token
+}
+
+export async function logout(): Promise<void> {
+  await api.post('/auth/logout')
+}

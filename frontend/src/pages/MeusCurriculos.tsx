@@ -69,7 +69,7 @@ export function MeusCurriculos() {
             <span className="text-sm text-slate-600 hidden sm:inline">
               {user?.nome}
             </span>
-            <Button variant="ghost" onClick={logout}>
+            <Button variant="ghost" onClick={() => void logout()}>
               Sair
             </Button>
           </div>
