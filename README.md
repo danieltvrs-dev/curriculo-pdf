@@ -258,6 +258,96 @@ Para a feature de IA:
 
 ---
 
+## Deploy em produção
+
+Stack recomendada (free tier permanente):
+
+| Camada | Serviço |
+|---|---|
+| Backend | [Render](https://render.com) |
+| Frontend | [Vercel](https://vercel.com) |
+| PostgreSQL | [Supabase](https://supabase.com) |
+
+### 1. PostgreSQL no Supabase
+
+1. Cria conta em [supabase.com](https://supabase.com) (login com GitHub).
+2. **New project**: dá um nome, define senha forte do banco, escolhe região próxima (ex: `sa-east-1` São Paulo).
+3. Espera ~2 minutos pro projeto provisionar.
+4. **Project Settings → Database → Connection string → URI (sessão)** — copia a URL. Substitui `[YOUR-PASSWORD]` pela senha que você definiu.
+
+### 2. Backend no Render
+
+1. Cria conta em [render.com](https://render.com) (login com GitHub).
+2. **New +** → **Web Service** → conecta o repositório do GitHub.
+3. Configurações:
+   - **Name:** `curriculo-pdf-api` (ou outro)
+   - **Region:** próxima de você
+   - **Root Directory:** `backend`
+   - **Runtime:** Python 3
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - **Plan:** Free
+4. **Environment Variables** (clica em "Advanced"):
+
+   ```
+   DATABASE_URL=<URL copiada do Supabase>
+   JWT_SECRET=<gere com: python -c "import secrets; print(secrets.token_urlsafe(64))">
+   JWT_ALGORITHM=HS256
+   ACCESS_TOKEN_EXPIRA_MINUTOS=15
+   REFRESH_TOKEN_EXPIRA_MINUTOS=43200
+   COOKIE_SECURE=true
+   COOKIE_SAMESITE=none
+   CORS_ORIGINS=https://<seu-app>.vercel.app
+   GOOGLE_API_KEY=<opcional, se quiser IA>
+   GEMINI_MODEL=gemini-2.5-flash
+   APP_ENV=production
+   ```
+
+   > `CORS_ORIGINS` você só preenche depois de fazer deploy no Vercel e ter a URL.
+
+5. **Create Web Service**. Espera ~5-10 minutos do primeiro build.
+6. Quando estiver no ar, anota a URL (ex: `https://curriculo-pdf-api.onrender.com`).
+
+### 3. Frontend no Vercel
+
+1. Cria conta em [vercel.com](https://vercel.com) (login com GitHub).
+2. **Add New → Project** → escolhe o repositório.
+3. Configurações:
+   - **Framework Preset:** Vite (detecta sozinho)
+   - **Root Directory:** `frontend`
+   - **Build Command:** `npm run build` (auto)
+   - **Output Directory:** `dist` (auto)
+4. **Environment Variables**:
+
+   ```
+   VITE_API_URL=https://<seu-backend>.onrender.com
+   ```
+
+5. **Deploy**. Espera 1-2 minutos.
+6. Anota a URL (ex: `https://curriculo-pdf-frontend.vercel.app`).
+
+### 4. Ajuste fino do CORS
+
+Volta no Render, edita a variável `CORS_ORIGINS` colocando a URL real do Vercel:
+
+```
+CORS_ORIGINS=https://curriculo-pdf-frontend.vercel.app
+```
+
+Salva. O Render reinicia automaticamente em ~30 segundos.
+
+### 5. Teste
+
+Abre a URL do Vercel, cria uma conta, gera um currículo. Tudo funcionando ponta a ponta em HTTPS, cookie cross-site, banco gerenciado.
+
+### Limitações do free tier
+
+- **Render free:** o servidor dorme após 15 min sem requests. A primeira request após isso demora 30-60s pra acordar. Pra portfolio é aceitável; pra produção real, upgrade pro plano starter.
+- **Supabase free:** 500 MB de banco, suficiente pra milhares de currículos.
+- **Vercel free:** sem limite prático pra portfolio.
+
+---
+
 ## Roadmap
 
 ### Concluído
@@ -286,7 +376,6 @@ Para a feature de IA:
 
 ### Próximos
 
-- Deploy: backend em Render/Railway, frontend em Vercel, banco PostgreSQL
 - Mais templates de PDF
 - Preview do PDF antes de baixar
 - Exportar/importar currículo em JSON
